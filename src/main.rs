@@ -1,18 +1,8 @@
 pub mod dal;
+pub mod structs;
 
+use crate::structs::subscription::Subscription;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize)]
-struct Employee {
-    id: u32,
-    name: String,
-}
-
-// GET / endpoint
-async fn index() -> impl Responder {
-    HttpResponse::Ok().body("Hello, World!")
-}
 
 async fn get_all_channels() -> impl Responder {
     let channels = dal::channel::get_all_channels().await;
@@ -29,17 +19,37 @@ async fn get_subscriptions_by_user(user_id: web::Path<u32>) -> impl Responder {
     HttpResponse::Ok().json(channels)
 }
 
-// POST /object endpoint
-async fn create_employee(employee: web::Json<Employee>) -> impl Responder {
-    HttpResponse::Created().json(employee.into_inner())
+// POST /subscription endpoint
+async fn create_subscription(subscription: web::Json<Subscription>) -> impl Responder {
+    let user_id = subscription.user_id;
+    let channel_id = subscription.channel_id;
+
+    let result = dal::subscriptions::subscribe_to_channel(user_id, channel_id).await;
+
+    if !result {
+        return HttpResponse::InternalServerError(); //500 or created
+    }
+
+    HttpResponse::Ok() //200
+}
+
+async fn unsubscribe_from_channel(subscription: web::Json<Subscription>) -> impl Responder {
+    let user_id = subscription.user_id;
+    let channel_id = subscription.channel_id;
+
+    let result = dal::subscriptions::unsubscribe_from_channel(user_id, channel_id).await;
+
+    if !result {
+        return HttpResponse::InternalServerError(); //500 or created
+    }
+
+    HttpResponse::Ok() //200
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
-            .route("/", web::get().to(index))
-            .route("/employee", web::post().to(create_employee))
             .route(
                 "/channels/owner/{id}",
                 web::get().to(get_channels_created_by_user),
@@ -49,6 +59,8 @@ async fn main() -> std::io::Result<()> {
                 "/subscriptions/user/{id}",
                 web::get().to(get_subscriptions_by_user),
             )
+            .route("/subscription", web::post().to(create_subscription))
+            .route("/unsubscribe", web::delete().to(unsubscribe_from_channel))
     })
     .bind("127.0.0.1:8080")?
     .run()
