@@ -61,6 +61,11 @@ async fn login_user(login_data: web::Json<LoginData>) -> impl Responder {
 }
 
 
+async fn get_posts_by_channel(channel_id: web::Path<u32>) -> impl Responder {
+    let posts = dal::posts::get_posts_by_channel(*channel_id).await;
+    HttpResponse::Ok().json(posts)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
@@ -77,6 +82,7 @@ async fn main() -> std::io::Result<()> {
             .route("/subscription", web::post().to(create_subscription))
             .route("/unsubscribe", web::delete().to(unsubscribe_from_channel))
             .route("/login", web::post().to(login_user))
+            .route("/posts/channel/{id}", web::get().to(get_posts_by_channel))
     })
     .bind("127.0.0.1:8080")?
     .run()
