@@ -3,6 +3,7 @@ pub mod structs;
 
 use crate::structs::subscription::Subscription;
 use crate::structs::user::LoginData;
+use actix_cors::Cors;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 
 async fn get_all_channels() -> impl Responder {
@@ -59,7 +60,7 @@ async fn login_user(login_data: web::Json<LoginData>) -> impl Responder {
     let result = dal::users::login(email, password).await;
 
     if let Some(user) = result {
-        return HttpResponse::Ok().json(user);//200
+        return HttpResponse::Ok().json(user); //200
     }
 
     HttpResponse::Unauthorized().finish() //401
@@ -67,7 +68,12 @@ async fn login_user(login_data: web::Json<LoginData>) -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| {
+    HttpServer::new(move || {
+        let cors = Cors::default()
+            .allow_any_origin()
+            .allow_any_method()
+            .allow_any_header();
+
         App::new()
             .route(
                 "/channels/owner/{id}",
@@ -82,6 +88,7 @@ async fn main() -> std::io::Result<()> {
             .route("/unsubscribe", web::delete().to(unsubscribe_from_channel))
             .route("/login", web::post().to(login_user))
             .route("/posts/channel/{id}", web::get().to(get_posts_by_channel))
+            .wrap(cors)
     })
     .bind("127.0.0.1:8080")?
     .run()
