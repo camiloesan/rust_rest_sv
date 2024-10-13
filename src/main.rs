@@ -3,6 +3,7 @@ pub mod structs;
 
 use crate::structs::subscription::Subscription;
 use crate::structs::user::LoginData;
+use crate::structs::channel::Channel;
 use actix_cors::Cors;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 
@@ -19,6 +20,21 @@ async fn get_all_channels() -> impl Responder {
 async fn get_channels_created_by_user(user_id: web::Path<u32>) -> impl Responder {
     let channels = dal::channel::get_channels_created_by_user(*user_id).await;
     HttpResponse::Ok().json(channels)
+}
+
+async fn create_channel(channel: web::Json<Channel>) -> impl Responder {
+    let creator_id = channel.creator_id;
+    let name = channel.name.clone();
+    let description = channel.description.clone();
+    let category_id = channel.category_id;
+
+    let result = dal::channel::create_channel(creator_id, name, description, category_id).await;
+
+    if !result {
+        return HttpResponse::InternalServerError(); //500
+    }
+
+    HttpResponse::Ok() //200
 }
 
 async fn get_subscriptions_by_user(user_id: web::Path<u32>) -> impl Responder {
@@ -94,6 +110,7 @@ async fn main() -> std::io::Result<()> {
             .route("/login", web::post().to(login_user))
             .route("/posts/channel/{id}", web::get().to(get_posts_by_channel))
             .route("/categories/all", web::get().to(get_all_categories))
+            .route("/channel/create", web::post().to(create_channel))
             .wrap(cors)
     })
     .bind("127.0.0.1:8080")?
