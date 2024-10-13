@@ -6,6 +6,11 @@ use crate::structs::user::LoginData;
 use actix_cors::Cors;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 
+async fn get_all_categories() -> impl Responder {
+    let categories = dal::categories::get_all_categories().await;
+    HttpResponse::Ok().json(categories)
+}
+
 async fn get_all_channels() -> impl Responder {
     let channels = dal::channel::get_all_channels().await;
     HttpResponse::Ok().json(channels)
@@ -88,6 +93,7 @@ async fn main() -> std::io::Result<()> {
             .route("/unsubscribe", web::delete().to(unsubscribe_from_channel))
             .route("/login", web::post().to(login_user))
             .route("/posts/channel/{id}", web::get().to(get_posts_by_channel))
+            .route("/categories/all", web::get().to(get_all_categories))
             .wrap(cors)
     })
     .bind("127.0.0.1:8080")?
