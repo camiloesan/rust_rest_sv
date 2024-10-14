@@ -117,12 +117,13 @@ async fn verify_code(data: web::Json<VerificationRequest>) -> impl Responder {
 }
 
 async fn register_new_user(data: web::Json<RegisterRequest>) -> impl Responder {
-    let request = data.into_inner();
+    let request = dal::users::register_user(data.into_inner()).await;
 
-    match dal::users::register_user(request).await {
-        Ok(_) => HttpResponse::Created().finish(), // 201 Created
-        Err(err) => HttpResponse::BadRequest().body(err), // 400 Bad Request
+    if !request {
+        return HttpResponse::InternalServerError();
     }
+
+    HttpResponse::Ok()
 }
 
 

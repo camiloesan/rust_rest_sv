@@ -65,7 +65,7 @@ pub fn generate_verification_code() -> String {
 }
 
 pub async fn send_verification_email(email: String, code: String) {
-    //let api_key = "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";
+    let api_key = "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";
     let from_email = "studyvaultuv@gmail.com";
 
     let body = json!({
@@ -82,7 +82,7 @@ pub async fn send_verification_email(email: String, code: String) {
 
     let client = Client::new();
     let response = client.post("https://api.sendgrid.com/v3/mail/send")
-        //.bearer_auth(api_key)
+        .bearer_auth(api_key)
         .json(&body)
         .send()
         .await;
@@ -99,26 +99,29 @@ pub async fn send_verification_email(email: String, code: String) {
     }
 }
 
-pub async fn register_user(request: RegisterRequest) -> Result<(), String> {
+pub async fn register_user(request: RegisterRequest) -> bool {
     let user_type_id = if request.email.ends_with("@estudiantes.uv.mx") {
         2
     } else if request.email.ends_with("@uv.mx") {
         1
     } else {
-        return Err("Dominio de correo no válido".to_string());
+        return false;
     };
 
     let mut conn = data_access::get_connection();
 
     let query = "INSERT INTO users (user_type_id, name, last_name, email, password) VALUES (:user_type_id, :name, :last_name, :email, :password)";
 
-    conn.exec_drop(query, params! {
+    let result = conn
+    .exec_iter(query, params! {
         "user_type_id" => user_type_id,
         "name" => request.name,
         "last_name" => request.last_name,
         "email" => request.email,
         "password" => request.password,
-    }).expect("Failed to execute register query");
+        },
+    ).expect("Failed to execute register query")
+    .affected_rows();
 
-    Ok(())
+    result == 1
 }
