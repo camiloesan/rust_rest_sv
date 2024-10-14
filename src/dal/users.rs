@@ -65,7 +65,7 @@ pub fn generate_verification_code() -> String {
 }
 
 pub async fn send_verification_email(email: String, code: String) {
-    let api_key = "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";
+    //let api_key = "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";
     let from_email = "studyvaultuv@gmail.com";
 
     let body = json!({
@@ -82,7 +82,7 @@ pub async fn send_verification_email(email: String, code: String) {
 
     let client = Client::new();
     let response = client.post("https://api.sendgrid.com/v3/mail/send")
-        .bearer_auth(api_key)
+        //.bearer_auth(api_key)
         .json(&body)
         .send()
         .await;
