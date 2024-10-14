@@ -65,7 +65,7 @@ pub fn generate_verification_code() -> String {
 }
 
 pub async fn send_verification_email(email: String, code: String) {
-    let api_key = "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";
+    let api_key = "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";
     let from_email = "studyvaultuv@gmail.com";
 
     let body = json!({
