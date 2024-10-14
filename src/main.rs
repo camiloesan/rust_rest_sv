@@ -5,6 +5,7 @@ use crate::structs::subscription::Subscription;
 use crate::structs::user::LoginData;
 use crate::structs::channel::Channel;
 use crate::structs::emailverification::VerificationRequest;
+use crate::structs::registeruser::RegisterRequest;
 use crate::dal::users::{generate_verification_code, send_verification_email};
 use crate::dal::users::VERIFICATION_CODES;
 use actix_cors::Cors;
@@ -115,6 +116,16 @@ async fn verify_code(data: web::Json<VerificationRequest>) -> impl Responder {
     HttpResponse::Unauthorized().finish()
 }
 
+async fn register_new_user(data: web::Json<RegisterRequest>) -> impl Responder {
+    let request = data.into_inner();
+
+    match dal::users::register_user(request).await {
+        Ok(_) => HttpResponse::Created().finish(), // 201 Created
+        Err(err) => HttpResponse::BadRequest().body(err), // 400 Bad Request
+    }
+}
+
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
@@ -138,6 +149,7 @@ async fn main() -> std::io::Result<()> {
             .route("/subscription", web::post().to(create_subscription))
             .route("/unsubscribe", web::delete().to(unsubscribe_from_channel))
             .route("/login", web::post().to(login_user))
+            .route("/register", web::post().to(register_new_user))
             .route("/posts/channel/{id}", web::get().to(get_posts_by_channel))
             .route("/categories/all", web::get().to(get_all_categories))
             .route("/channel/create", web::post().to(create_channel))

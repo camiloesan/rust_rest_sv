@@ -1,4 +1,5 @@
 use crate::dal::data_access;
+use crate::structs::registeruser::RegisterRequest;
 use mysql::{params, prelude::Queryable, Row};
 use serde::{Deserialize, Serialize};
 use reqwest::Client;
@@ -96,4 +97,28 @@ pub async fn send_verification_email(email: String, code: String) {
         }
         Err(e) => println!("Error: {:?}", e),
     }
+}
+
+pub async fn register_user(request: RegisterRequest) -> Result<(), String> {
+    let user_type_id = if request.email.ends_with("@estudiantes.uv.mx") {
+        2
+    } else if request.email.ends_with("@uv.mx") {
+        1
+    } else {
+        return Err("Dominio de correo no válido".to_string());
+    };
+
+    let mut conn = data_access::get_connection();
+
+    let query = "INSERT INTO users (user_type_id, name, last_name, email, password) VALUES (:user_type_id, :name, :last_name, :email, :password)";
+
+    conn.exec_drop(query, params! {
+        "user_type_id" => user_type_id,
+        "name" => request.name,
+        "last_name" => request.last_name,
+        "email" => request.email,
+        "password" => request.password,
+    }).expect("Failed to execute register query");
+
+    Ok(())
 }
