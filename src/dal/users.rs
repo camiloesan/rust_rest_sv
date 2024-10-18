@@ -1,7 +1,18 @@
-use sha2::{Sha256, Digest};
 use crate::dal::data_access;
+use crate::structs::registeruser::RegisterRequest;
 use mysql::{params, prelude::Queryable, Row};
 use serde::{Deserialize, Serialize};
+use reqwest::Client;
+use serde_json::json;
+use std::collections::HashMap;
+use std::sync::Mutex;
+use rand::distributions::Alphanumeric;
+use rand::thread_rng;
+use rand::Rng;
+
+lazy_static::lazy_static! {
+    pub static ref VERIFICATION_CODES: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct User {
@@ -10,14 +21,6 @@ pub struct User {
     pub name: String,
     pub last_name: String,
     pub email: String,
-}
-
-
-fn hash_password(password: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(password);
-    let result = hasher.finalize();
-    hex::encode(result)
 }
 
 pub async fn login(email: String, password: String) -> Option<User> {
@@ -39,10 +42,7 @@ pub async fn login(email: String, password: String) -> Option<User> {
         let email: String = row.take("email").unwrap();
         let password_hash: String = row.take("password").unwrap();
 
-        
-        let hashed_password = hash_password(&password);
-
-        if password_hash == hashed_password {
+        if password_hash == password {
             return Some(User {
                 user_id,
                 user_type_id,
@@ -55,3 +55,73 @@ pub async fn login(email: String, password: String) -> Option<User> {
     None
 }
 
+pub fn generate_verification_code() -> String {
+    let code: String = thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(6)
+        .map(char::from)
+        .collect();
+    code
+}
+
+pub async fn send_verification_email(email: String, code: String) {
+    let api_key = "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";
+    let from_email = "studyvaultuv@gmail.com";
+
+    let body = json!({
+        "personalizations": [{
+            "to": [{ "email": email }],
+            "subject": "Tu código de verificación"
+        }],
+        "from": { "email": from_email },
+        "content": [{
+            "type": "text/plain",
+            "value": format!("Tu código de verificación es: {}", code)
+        }]
+    });
+
+    let client = Client::new();
+    let response = client.post("https://api.sendgrid.com/v3/mail/send")
+        .bearer_auth(api_key)
+        .json(&body)
+        .send()
+        .await;
+
+    match response {
+        Ok(res) => {
+            if res.status().is_success() {
+                println!("Email sent successfully!");
+            } else {
+                println!("Failed to send email: {}", res.status());
+            }
+        }
+        Err(e) => println!("Error: {:?}", e),
+    }
+}
+
+pub async fn register_user(request: RegisterRequest) -> bool {
+    let user_type_id = if request.email.ends_with("@estudiantes.uv.mx") {
+        2
+    } else if request.email.ends_with("@uv.mx") {
+        1
+    } else {
+        return false;
+    };
+
+    let mut conn = data_access::get_connection();
+
+    let query = "INSERT INTO users (user_type_id, name, last_name, email, password) VALUES (:user_type_id, :name, :last_name, :email, :password)";
+
+    let result = conn
+    .exec_iter(query, params! {
+        "user_type_id" => user_type_id,
+        "name" => request.name,
+        "last_name" => request.last_name,
+        "email" => request.email,
+        "password" => request.password,
+        },
+    ).expect("Failed to execute register query")
+    .affected_rows();
+
+    result == 1
+}

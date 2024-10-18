@@ -85,6 +85,27 @@ pub async fn get_subscriptions_by_user(user_id: u32) -> Vec<Channel> {
     channels
 }
 
+pub async fn create_channel(creator_id: u32, name: String, description: String, category_id: u32) -> bool {
+    let mut conn = data_access::get_connection();
+    let query = "INSERT INTO channels (creator_id, name, description, category_id)
+        VALUES (:creator_id, :name, :description, :category_id)";
+    
+    let result = conn
+        .exec_iter(
+            query,
+            params! {
+                "creator_id" => creator_id,
+                "name" => name,
+                "description" => description,
+                "category_id" => category_id,
+            },
+        )
+        .expect("Failed to create channel")
+        .affected_rows();
+    
+    result == 1  // Si se insertó correctamente, afectará una fila
+}
+
 #[cfg(test)]
 mod tests {
     use crate::dal::channel::*;
