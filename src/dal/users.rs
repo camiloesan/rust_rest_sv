@@ -58,41 +58,6 @@ pub fn generate_verification_code() -> String {
     code
 }
 
-pub async fn send_verification_email(email: String, code: String) {
-    let api_key = "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";
-    let from_email = "studyvaultuv@gmail.com";
-
-    let body = json!({
-        "personalizations": [{
-            "to": [{ "email": email }],
-            "subject": "Tu código de verificación"
-        }],
-        "from": { "email": from_email },
-        "content": [{
-            "type": "text/plain",
-            "value": format!("Tu código de verificación es: {}", code)
-        }]
-    });
-
-    let client = Client::new();
-    let response = client.post("https://api.sendgrid.com/v3/mail/send")
-        .bearer_auth(api_key)
-        .json(&body)
-        .send()
-        .await;
-
-    match response {
-        Ok(res) => {
-            if res.status().is_success() {
-                println!("Email sent successfully!");
-            } else {
-                println!("Failed to send email: {}", res.status());
-            }
-        }
-        Err(e) => println!("Error: {:?}", e),
-    }
-}
-
 pub async fn register_user(request: RegisterRequest) -> bool {
     let user_type_id = if request.email.ends_with("@estudiantes.uv.mx") {
         2
