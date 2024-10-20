@@ -1,18 +1,12 @@
 use crate::dal::data_access;
-use crate::structs::registeruser::RegisterRequest;
+use crate::structs::user::RegisterRequest;
 use mysql::{params, prelude::Queryable, Row};
 use serde::{Deserialize, Serialize};
 use reqwest::Client;
 use serde_json::json;
-use std::collections::HashMap;
-use std::sync::Mutex;
 use rand::distributions::Alphanumeric;
 use rand::thread_rng;
 use rand::Rng;
-
-lazy_static::lazy_static! {
-    pub static ref VERIFICATION_CODES: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
-}
 
 #[derive(Serialize, Deserialize)]
 pub struct User {
