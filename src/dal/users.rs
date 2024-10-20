@@ -1,3 +1,5 @@
+use std::string;
+
 use crate::dal::data_access;
 use crate::structs::user::RegisterRequest;
 use mysql::{params, prelude::Queryable, Row};
@@ -70,3 +72,18 @@ pub async fn register_user(request: RegisterRequest) -> bool {
 
     result == 1
 }
+
+pub async fn get_all_user_emails() -> Vec<String> {
+    let mut conn = data_access::get_connection();
+    let query = "SELECT email FROM users";
+    let mut emails: Vec<String> = Vec::new();
+
+    conn.query_map(&query, |mut row: Row| {
+        let email: String = row.take("email").unwrap();
+        emails.push(email);
+    })
+    .expect("failed to get user emails");
+
+    emails
+}
+

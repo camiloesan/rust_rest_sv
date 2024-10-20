@@ -25,3 +25,8 @@ pub async fn register_new_user(data: web::Json<RegisterRequest>) -> impl Respond
 
     HttpResponse::Ok()
 }
+
+pub async fn get_all_emails() -> impl Responder {
+    let emails = dal::users::get_all_user_emails().await;
+    HttpResponse::Ok().json(emails)
+}

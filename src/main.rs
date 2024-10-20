@@ -34,6 +34,7 @@ async fn main() -> std::io::Result<()> {
                 web::delete().to(subscription::unsubscribe_from_channel),
             )
             .route("/login", web::post().to(user::login_user))
+            .route("/user/email/all", web::get().to(user::get_all_emails))
             .route("/register", web::post().to(user::register_new_user))
             .route(
                 "/posts/channel/{id}",
