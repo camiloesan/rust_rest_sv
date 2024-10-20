@@ -1,5 +1,3 @@
-use std::string;
-
 use crate::dal::data_access;
 use crate::structs::user::RegisterRequest;
 use mysql::{params, prelude::Queryable, Row};
