@@ -2,11 +2,6 @@ use crate::dal::data_access;
 use crate::structs::user::RegisterRequest;
 use mysql::{params, prelude::Queryable, Row};
 use serde::{Deserialize, Serialize};
-use reqwest::Client;
-use serde_json::json;
-use rand::distributions::Alphanumeric;
-use rand::thread_rng;
-use rand::Rng;
 
 #[derive(Serialize, Deserialize)]
 pub struct User {
@@ -47,15 +42,6 @@ pub async fn login(email: String, password: String) -> Option<User> {
         }
     }
     None
-}
-
-pub fn generate_verification_code() -> String {
-    let code: String = thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(6)
-        .map(char::from)
-        .collect();
-    code
 }
 
 pub async fn register_user(request: RegisterRequest) -> bool {
