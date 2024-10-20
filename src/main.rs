@@ -17,11 +17,6 @@ async fn main() -> std::io::Result<()> {
 
         App::new()
             .route(
-                "/request_verification",
-                web::post().to(user::request_verification),
-            )
-            .route("/verify_code", web::post().to(user::verify_code))
-            .route(
                 "/channels/owner/{id}",
                 web::get().to(channel::get_channels_created_by_user),
             )
